@@ -7,6 +7,7 @@ Gem::Specification.new do |s|
   s.license = 'MIT'
   s.has_rdoc = 'yard'
 
+  s.homepage = 'https://github.com/nathankot/ledger-get-prices'
   s.summary = 'Intelligently update your ledger pricedb'
   s.description = <<-eof
     A tool that updates your ledger's pricedb based on

@@ -3,7 +3,7 @@ Gem::Specification.new do |s|
   s.version = '0.0.1'
   s.authors = ['Nathan Kot']
   s.email = 'nk@nathankot.com'
-  s.files = ['lib/get_prices.rb']
+  s.files = ['README.md', 'lib/get_prices.rb']
   s.license = 'MIT'
   s.has_rdoc = 'yard'
 

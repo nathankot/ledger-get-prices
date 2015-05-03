@@ -18,7 +18,7 @@ pricedb.
 # Environment Variables
 
 * __LEDGER_BASE_CURRENCY__: Defaults to USD, change this to your reporting currency.
-* __LEDGER_PRICE_DATE_FORMAT__: The date format of the outputted pricedb. Defaults to +%Y/%m/%d+.
+* __LEDGER_PRICE_DATE_FORMAT__: The date format of the outputted pricedb. Defaults to `%Y/%m/%d`.
 
 # Usage
 

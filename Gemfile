@@ -1,5 +1,4 @@
-# A sample Gemfile
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-# gem "rails"
-gem 'yahoo-finance'
+# Specify your gem's dependencies in ledger_get_prices.gemspec
+gemspec

@@ -4,7 +4,7 @@ Gem::Specification.new do |s|
   s.authors = ['Nathan Kot']
   s.email = 'nk@nathankot.com'
   s.files = `git ls-files`.split($\)
-  s.executables = "getprices"
+  s.executables = ["getprices"]
   s.require_paths = ["lib"]
   s.license = 'MIT'
   s.has_rdoc = 'yard'

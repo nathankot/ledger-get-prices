@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'ledger-get-prices'
-  s.version = '0.0.2'
+  s.version = '0.0.3'
   s.authors = ['Nathan Kot']
   s.email = 'nk@nathankot.com'
   s.files = `git ls-files`.split($\)

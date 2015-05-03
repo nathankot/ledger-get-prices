@@ -1,4 +1,7 @@
 require "ledger_get_prices/version"
+require 'date'
+require 'open-uri'
+require 'yahoo-finance'
 
 module LedgerGetPrices
 

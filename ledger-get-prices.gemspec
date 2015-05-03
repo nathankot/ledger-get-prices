@@ -1,9 +1,11 @@
 Gem::Specification.new do |s|
   s.name = 'ledger-get-prices'
-  s.version = '0.0.1'
+  s.version = '0.0.2'
   s.authors = ['Nathan Kot']
   s.email = 'nk@nathankot.com'
-  s.files = ['README.md', 'lib/get_prices.rb']
+  s.files = `git ls-files`.split($\)
+  s.executables = "getprices"
+  s.require_paths = ["lib"]
   s.license = 'MIT'
   s.has_rdoc = 'yard'
 

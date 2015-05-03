@@ -23,6 +23,6 @@ pricedb.
 # Usage
 
 ```sh
-gem install ledger-get-prices
+gem install ledger_get_prices
 getprices # This will WRITE to your LEDGER_PRICE_DB file.
 ```

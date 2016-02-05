@@ -76,7 +76,7 @@ module LedgerGetPrices
 
         while quote_strings.length > 0 && result.nil?
           begin
-            result = YahooFinance.historical_quotes(
+            result = YahooFinance::Client.new.historical_quotes(
               quote_strings.shift, start_date: start_date, end_date: end_date, period: :daily)
           rescue OpenURI::HTTPError => e
             err = e

@@ -123,12 +123,15 @@ module LedgerGetPrices
       # @return [Array<String>] Possible Yahoo finance compatible quote strings
       def possible_quote_strings(commodity: nil)
         raise "No commodity given" if commodity.nil?
+        # We get all quotes in USD
         ["#{commodity}=X", "USD#{commodity}=X", "#{commodity}"]
       end
 
       def commodities
         # All the commodities we care about.
         @commodities ||= `ledger commodities`.split("\n").reject { |x| x == "$" }.tap do |c|
+          # Since all quotes will be in USD, we don't need to bother
+          # retrieving USD/USD quotes.
           c << BASE_CURRENCY if BASE_CURRENCY != 'USD'
         end
       end

@@ -32,7 +32,7 @@ module LedgerGetPrices
       PRICE_DB_PATH = ENV['LEDGER_PRICE_DB'] || ENV['PRICE_HIST'] # PRICE_HIST is <v3
       DATE_FORMAT = ENV['LEDGER_PRICE_DATE_FORMAT'] || "%Y/%m/%d"
       PRICE_FORMAT = "P %{date} %{time} %{symbol} %{price}"
-      COMMODITY_BLACKLIST = (ENV['LEDGER_PRICE_COMMODITY_BLACKLIST'] || '').split(" ")
+      COMMODITY_BLACKLIST = (ENV['LEDGER_PRICE_COMMODITY_BLACKLIST'] || 'BTC').split(" ")
 
       # With a bang because it does a file write.
       def run!
@@ -65,6 +65,8 @@ module LedgerGetPrices
         if COMMODITY_BLACKLIST.include?(symbol)
           puts "Skipping #{symbol}: blacklisted."
           puts "Use `LEDGER_PRICE_COMMODITY_BLACKLIST` to configure the blacklist."
+          puts "BTC is included by default because yahoo doesn't provide a way to " +
+              "get historical data for it."
           return []
         end
 

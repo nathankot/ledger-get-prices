@@ -32,7 +32,7 @@ module LedgerGetPrices
 
       PRICE_DB_PATH = ENV['LEDGER_PRICE_DB'] || ENV['PRICE_HIST'] # PRICE_HIST is <v3
       DATE_FORMAT = ENV['LEDGER_PRICE_DATE_FORMAT'] || "%Y/%m/%d"
-      PRICE_FORMAT = "P %{date} %{time} %{symbol} %{price}"
+      PRICE_FORMAT = ENV['LEDGER_PRICE_FORMAT'] || "P %{date} %{time} %{symbol} %{price}"
       COMMODITY_BLACKLIST = (ENV['LEDGER_PRICE_COMMODITY_BLACKLIST'] || 'BTC').split(" ")
 
       # With a bang because it does a file write.

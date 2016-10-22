@@ -17,16 +17,17 @@ module LedgerGetPrices
   # running +ledger+ vanilla knows where to get the journal and
   # pricedb.
   #
+  # Yahoo works best when fetching all prices relative to USD.
+  # So regardless of whether or not USD is actually used, it will
+  # always appear in the resulting prices file.
+  #
   # = Options
   #
-  # +LEDGER_BASE_CURRENCY+: Defaults to USD, change this to your reporting currency.
   # +LEDGER_PRICE_DATE_FORMAT+: The date format of the outputted pricedb. Defaults to +%Y/%m/%d+.
   class GetPrices
     class << self
 
-      # Yahoo finance works best in USD, if the base currency is
-      # different we will also store the USD price of that currency
-      # to allow for conversion.
+      # The base currency should be the currency that the dollar sign represents in your reports.
       BASE_CURRENCY = ENV['LEDGER_BASE_CURRENCY'] || "USD"
 
       PRICE_DB_PATH = ENV['LEDGER_PRICE_DB'] || ENV['PRICE_HIST'] # PRICE_HIST is <v3
@@ -51,15 +52,18 @@ module LedgerGetPrices
       #
       # @return [Array] an array of formatted prices
       def new_prices
-        commodities.reduce(existing_prices) do |db, c|
-          # `|` is a shortcut for merge
-          db | prices_for_symbol(c, start_date: start_date, end_date: end_date)
-              .map { |x| price_string_from_result(x, symbol: c) }
-        end
+        # Since everything is relative to USD, we don't need to fetch it.
+        commodities
+          .reject { |c| c == "USD" }
+          .reduce(existing_prices) do |db, c|
+            # `|` is a shortcut for merge
+            db | prices_for_symbol(c, start_date: start_date, end_date: end_date)
+                .map { |x| price_string_from_result(x, symbol: c) }
+          end
       end
 
       # @return [Array] of YahooFinance results (OpenStruct)
-      def prices_for_symbol(symbol, start_date: start_date, end_date: end_date) # -> Array
+      def prices_for_symbol(symbol, start_date: nil, end_date: nil) # -> Array
         puts "Getting historical quotes for: #{symbol}"
 
         if COMMODITY_BLACKLIST.include?(symbol)
@@ -77,7 +81,11 @@ module LedgerGetPrices
         while quote_strings.length > 0 && result.nil?
           begin
             result = YahooFinance::Client.new.historical_quotes(
-              quote_strings.shift, start_date: start_date, end_date: end_date, period: :daily)
+              quote_strings.shift,
+              start_date: start_date,
+              end_date: end_date,
+              period: :daily)
+
           rescue OpenURI::HTTPError => e
             err = e
           end
@@ -97,8 +105,8 @@ module LedgerGetPrices
         PRICE_FORMAT % {
           date: Date.strptime(data.trade_date, '%Y-%m-%d').strftime(DATE_FORMAT),
           time: '23:59:59',
-          symbol: (BASE_CURRENCY == 'USD' ? '$' : 'USD'),
-          price: (BASE_CURRENCY == symbol ? '$' : symbol)+ data.close
+          symbol: 'USD',
+          price: symbol + data.close
         }
       end
 
@@ -131,11 +139,10 @@ module LedgerGetPrices
 
       def commodities
         # All the commodities we care about.
-        @commodities ||= `ledger commodities`.split("\n").reject { |x| x == "$" }.tap do |c|
-          # Since all quotes will be in USD, we don't need to bother
-          # retrieving USD/USD quotes.
-          c << BASE_CURRENCY if BASE_CURRENCY != 'USD'
-        end
+        @commodities ||= `ledger commodities`.split("\n")
+          .reject { |x| x == "$" }
+          .tap { |c| c << BASE_CURRENCY }
+          .uniq
       end
 
     end

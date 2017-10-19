@@ -1,13 +1,14 @@
 require "ledger_get_prices/version"
 require 'date'
 require 'open-uri'
-require 'yahoo-finance'
+require 'net/http'
+require 'json'
 
 module LedgerGetPrices
 
   # = Synopsis
   #
-  # Tool that uses Yahoo finance to intelligently generate
+  # Tool that uses Bloomberg to intelligently generate
   # a ledger price database based on your current ledger
   # commodities and time period.
   #
@@ -17,9 +18,7 @@ module LedgerGetPrices
   # running +ledger+ vanilla knows where to get the journal and
   # pricedb.
   #
-  # Yahoo works best when fetching all prices relative to USD.
-  # So regardless of whether or not USD is actually used, it will
-  # always appear in the resulting prices file.
+  # All quotes are fetched relative to USD.
   #
   # = Options
   #
@@ -33,7 +32,7 @@ module LedgerGetPrices
       PRICE_DB_PATH = ENV['LEDGER_PRICE_DB'] || ENV['PRICE_HIST'] # PRICE_HIST is <v3
       DATE_FORMAT = ENV['LEDGER_PRICE_DATE_FORMAT'] || "%Y/%m/%d"
       PRICE_FORMAT = ENV['LEDGER_PRICE_FORMAT'] || "P %{date} %{time} %{symbol} %{price}"
-      COMMODITY_BLACKLIST = (ENV['LEDGER_PRICE_COMMODITY_BLACKLIST'] || 'BTC').split(" ")
+      COMMODITY_BLACKLIST = (ENV['LEDGER_PRICE_COMMODITY_BLACKLIST'] || 'BTC ETH').split(" ")
 
       # With a bang because it does a file write.
       def run!
@@ -57,56 +56,64 @@ module LedgerGetPrices
           .reject { |c| c == "USD" }
           .reduce(existing_prices) do |db, c|
             # `|` is a shortcut for merge
-            db | prices_for_symbol(c, start_date: start_date, end_date: end_date)
+            db | prices_for_symbol(c, start_date: start_date)
                 .map { |x| price_string_from_result(x, symbol: c) }
           end
       end
 
-      # @return [Array] of YahooFinance results (OpenStruct)
-      def prices_for_symbol(symbol, start_date: nil, end_date: nil) # -> Array
+      # @return [Array] of results (OpenStruct)
+      def prices_for_symbol(symbol, start_date: nil) # -> Array
         puts "Getting historical quotes for: #{symbol}"
 
         if COMMODITY_BLACKLIST.include?(symbol)
           puts "Skipping #{symbol}: blacklisted."
           puts "Use `LEDGER_PRICE_COMMODITY_BLACKLIST` to configure the blacklist."
-          puts "BTC is included by default because yahoo doesn't provide a way to " +
-              "get historical data for it."
+          puts "BTC is blacklisted by default because Bloomberg doesn't support it."
           return []
         end
 
-        result = nil
-        quote_strings = possible_quote_strings(commodity: symbol)
         err = nil
 
-        while quote_strings.length > 0 && result.nil?
-          begin
-            result = YahooFinance::Client.new.historical_quotes(
-              quote_strings.shift,
-              start_date: start_date,
-              end_date: end_date,
-              period: :daily)
+        query = "#{symbol}USD:CUR"
+        uri = URI("https://www.bloomberg.com/markets/api/bulk-time-series/price/#{query}?timeFrame=1_YEAR")
+        response_json = JSON.parse Net::HTTP.get(uri)
 
-          rescue OpenURI::HTTPError => e
-            err = e
-          end
+        unless response_json.kind_of?(Array)
+          puts "Could not parse response from Bloomberg: #{response_json}"
+          return []
         end
 
-        if result.nil?
-          puts "Could not get quotes from Yahoo for: #{symbol}"
+        response_json = response_json[0]
+
+        unless response_json != nil and response_json["price"] != nil and response_json["price"].respond_to? :map then
+          puts "Could not get quotes for: #{symbol}"
           puts "It may be worthwhile getting prices for this manually."
-          []
-        else result
+          return []
         end
+
+        return response_json["price"]
+          .map { |data|
+            date = Date.strptime(data["date"])
+            time = Time.new(date.year, date.month, date.day, 23, 59, 59)
+            value = data["value"]
+            result = {
+              :time => time,
+              :symbol => symbol,
+              :price => "USD#{value}"
+            }
+            result
+          }
+          .select { |data| data[:time].to_date >= start_date }
       end
 
       # @return [String]
       def price_string_from_result(data, symbol: nil)
         raise "Must pass symbol" if symbol.nil?
         PRICE_FORMAT % {
-          date: Date.strptime(data.trade_date, '%Y-%m-%d').strftime(DATE_FORMAT),
-          time: '23:59:59',
-          symbol: 'USD',
-          price: symbol + data.close
+          date: data[:time].to_date.strftime(DATE_FORMAT),
+          time: data[:time].strftime("%H:%M:%S"),
+          symbol: data[:symbol],
+          price: data[:price]
         }
       end
 
@@ -121,20 +128,6 @@ module LedgerGetPrices
           date_str = /Time\speriod:\s*([\d\w\-]*)\s*to/.match(stats)[1]
           return Date.strptime(date_str, "%y-%b-%d")
         end
-      end
-
-      # End date is today, wish I can see the future but unfortunately..
-      # @return [Date]
-      def end_date
-        @end_date ||= Date.new()
-      end
-
-      # Try the commodity as a currency first, before trying it as a stock
-      # @return [Array<String>] Possible Yahoo finance compatible quote strings
-      def possible_quote_strings(commodity: nil)
-        raise "No commodity given" if commodity.nil?
-        # We get all quotes in USD
-        ["#{commodity}=X", "USD#{commodity}=X", "#{commodity}"]
       end
 
       def commodities

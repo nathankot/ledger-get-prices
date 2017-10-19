@@ -5,7 +5,7 @@ pricedb process. Enjoy :) PR's welcome.
 
 # Synopsis
 
-_Tool that uses Yahoo finance to intelligently generate
+_Tool that uses Bloomberg to intelligently generate
 a ledger price database based on your current ledger
 commodities and time period._
 

@@ -75,8 +75,13 @@ module LedgerGetPrices
         err = nil
 
         query = "#{symbol}USD:CUR"
-        uri = URI("https://www.bloomberg.com/markets/api/bulk-time-series/price/#{query}?timeFrame=1_YEAR")
-        response_json = JSON.parse Net::HTTP.get(uri)
+        uri = URI.parse("https://www.bloomberg.com/markets/api/bulk-time-series/price/#{query}?timeFrame=1_YEAR")
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        req = Net::HTTP::Get.new(uri.request_uri)
+        req.initialize_http_header({'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'})
+        response = http.request(req)
+        response_json = JSON.parse response.body
 
         unless response_json.kind_of?(Array)
           puts "Could not parse response from Bloomberg: #{response_json}"
